@@ -1,0 +1,30 @@
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+
+# Config
+pydantic-settings==2.6.1
+
+# Storage
+qdrant-client==1.12.1
+aiosqlite==0.20.0
+
+# Document parsing
+pymupdf==1.24.13
+pypdf==5.1.0
+
+# Embeddings + LLM (via Ollama)
+langchain-ollama==0.2.1
+langchain-core==0.3.21
+
+# Agent
+langgraph==0.2.53
+
+# Retrieval
+rank-bm25==0.2.2
+sentence-transformers==3.3.1
+
+# Utilities
+httpx==0.28.0
+numpy==1.26.4
