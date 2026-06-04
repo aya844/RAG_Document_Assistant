@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Environment
+.env
+*.env.local
+
+# Data — never commit models, uploads, or indexes
+data/
+*.pkl
+*.db
+
+# Ollama models (if pulled locally into project)
+*.bin
+*.gguf
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/.env.local
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+data/*
+!data/.gitkeep
