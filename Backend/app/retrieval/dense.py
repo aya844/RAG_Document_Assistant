@@ -1,3 +1,4 @@
+# backend/app/retrieval/dense.py
 import logging
 from dataclasses import dataclass
 from app.config import get_settings
@@ -20,21 +21,18 @@ class DenseResult:
 
 
 async def dense_search(query: str, top_k: int) -> list[DenseResult]:
-    """
-    Embed the query and search Qdrant for nearest child chunks.
-    """
     query_vector = await embed_single(query)
     qdrant = get_qdrant_client()
 
-    results = await qdrant.search(
+    results = await qdrant.query_points(
         collection_name=settings.qdrant_collection,
-        query_vector=query_vector,
+        query=query_vector,
         limit=top_k,
         with_payload=True,
     )
 
     hits = []
-    for r in results:
+    for r in results.points:
         p = r.payload
         hits.append(DenseResult(
             chunk_id=str(r.id),

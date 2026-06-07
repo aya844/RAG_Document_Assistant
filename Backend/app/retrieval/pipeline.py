@@ -27,18 +27,8 @@ class RetrievalContext:
 
 
 async def run_retrieval_pipeline(query: str) -> list[RetrievalContext]:
-    """
-    Full pipeline:
-    1. Dense search (Qdrant)       → top_k results
-    2. Sparse search (BM25)        → top_k results
-    3. RRF fusion                  → top_k unified
-    4. Cross-encoder reranking     → top_n results
-    5. Fetch parent chunks         → final context list
-
-    Returns empty list if no documents are indexed.
-    """
-    top_k = settings.retrieval_top_k   # 15
-    top_n = settings.rerank_top_n      # 5
+    top_k = settings.retrieval_top_k
+    top_n = settings.rerank_top_n
 
     # --- Step 1: Dense ---
     dense_results = await dense_search(query, top_k)
@@ -47,10 +37,10 @@ async def run_retrieval_pipeline(query: str) -> list[RetrievalContext]:
     bm25_index = get_bm25_index()
     sparse_results = bm25_index.search(query, top_k)
 
-    # --- Guard: nothing indexed yet ---
+    # --- Guard: nothing indexed ---
     if not dense_results and not sparse_results:
         logger.warning("No results from either dense or sparse search")
-        return []
+        return []  # ← retourne [] pas None
 
     # --- Step 3: RRF Fusion ---
     fused = reciprocal_rank_fusion(dense_results, sparse_results, top_k)
@@ -58,15 +48,26 @@ async def run_retrieval_pipeline(query: str) -> list[RetrievalContext]:
     # --- Step 4: Rerank ---
     reranked = rerank(query, fused, top_n)
 
-    # --- Step 5: Fetch parent chunks from SQLite ---
+    # --- Guard: reranker returned nothing ---
+    if not reranked:
+        logger.warning("Reranker returned no results")
+        return []  # ← retourne [] pas None
+
+    # --- Step 5: Fetch parent chunks ---
     contexts: list[RetrievalContext] = []
     seen_parents: set[str] = set()
+    seen_content: set[str] = set()
 
     for result in reranked:
-        # Deduplicate: multiple children can share the same parent
         if result.parent_id in seen_parents:
             continue
+
+        content_key = result.content[:100]
+        if content_key in seen_content:
+            continue
+
         seen_parents.add(result.parent_id)
+        seen_content.add(content_key)
 
         parent = await get_parent_chunk(result.parent_id)
         if not parent:
@@ -83,8 +84,9 @@ async def run_retrieval_pipeline(query: str) -> list[RetrievalContext]:
             rerank_score=result.rerank_score,
         ))
 
+    top_score = contexts[0].rerank_score if contexts else 0.0
     logger.info(
         f"Pipeline complete: {len(contexts)} contexts "
-        f"(top score: {contexts[0].rerank_score:.3f} if contexts else 'n/a')"
+        f"(top score: {top_score:.3f})"
     )
     return contexts
