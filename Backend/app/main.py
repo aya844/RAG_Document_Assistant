@@ -8,6 +8,8 @@ from app.storage.database import init_db
 from app.dependencies import ensure_collection
 from app.api import documents, chat
 
+from app.retrieval.sparse import get_bm25_index
+
 settings = get_settings()
 
 
@@ -18,6 +20,7 @@ async def lifespan(app: FastAPI):
     os.makedirs(os.path.dirname(settings.sqlite_path), exist_ok=True)
     await init_db()
     await ensure_collection()
+    get_bm25_index()
     yield
     # Shutdown — nothing needed
 
