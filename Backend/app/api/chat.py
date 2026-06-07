@@ -1,7 +1,10 @@
+import logging
 from fastapi import APIRouter
 from pydantic import BaseModel
+from app.agent.graph import agent_graph
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class ChatRequest(BaseModel):
@@ -9,7 +12,39 @@ class ChatRequest(BaseModel):
     session_id: str | None = None
 
 
-@router.post("/")
+class Citation(BaseModel):
+    filename: str
+    page_number: int | None
+    rerank_score: float | None = None
+    excerpt: str | None = None
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    citations: list[Citation]
+    grounded: bool
+    intent: str
+
+
+@router.post("/", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    # Implemented in Phase 4
-    return {"answer": "not implemented yet", "citations": []}
+    logger.info(f"Chat request: {request.message[:80]}")
+
+    initial_state = {
+        "query": request.message,
+        "intent": "unknown",
+        "retrieval_result": {},
+        "summarize_result": {},
+        "answer": "",
+        "citations": [],
+        "grounded": False,
+    }
+
+    final_state = await agent_graph.ainvoke(initial_state)
+
+    return ChatResponse(
+        answer=final_state["answer"],
+        citations=[Citation(**c) for c in final_state["citations"]],
+        grounded=final_state["grounded"],
+        intent=final_state["intent"],
+    )
