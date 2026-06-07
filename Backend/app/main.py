@@ -10,6 +10,8 @@ from app.api import documents, chat
 
 from app.retrieval.sparse import get_bm25_index
 
+from app.api import retrieval
+
 settings = get_settings()
 
 
@@ -37,7 +39,7 @@ app.add_middleware(
 
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-
+app.include_router(retrieval.router, prefix="/api/retrieval", tags=["retrieval"])
 
 @app.get("/health")
 async def health():
