@@ -33,12 +33,39 @@ class BM25Index:
         tokenized = [doc.content.lower().split() for doc in self.documents]
         self.bm25 = BM25Okapi(tokenized)
 
-    def search(self, query: str, top_k: int) -> list[tuple[BM25Document, float]]:
+    def search(
+            self,
+            query: str,
+            top_k: int,
+            document_ids: list[str] | None = None,
+    ) -> list[tuple[BM25Document, float]]:
+        """
+        document_ids: restrict search to these document IDs.
+        Empty list or None = search all documents.
+        """
         if not self.bm25 or not self.documents:
             return []
+
         tokenized_query = query.lower().split()
+
+        if document_ids:
+            # Filter to subset, build temporary BM25 index
+            subset = [d for d in self.documents if d.document_id in document_ids]
+            if not subset:
+                return []
+            from rank_bm25 import BM25Okapi
+            tmp = BM25Okapi([d.content.lower().split() for d in subset])
+            scores = tmp.get_scores(tokenized_query)
+            top_indices = sorted(
+                range(len(scores)), key=lambda i: scores[i], reverse=True
+            )[:top_k]
+            return [(subset[i], float(scores[i])) for i in top_indices]
+
+        # No filter — search entire index
         scores = self.bm25.get_scores(tokenized_query)
-        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:top_k]
+        top_indices = sorted(
+            range(len(scores)), key=lambda i: scores[i], reverse=True
+        )[:top_k]
         return [(self.documents[i], float(scores[i])) for i in top_indices]
 
     def save(self):

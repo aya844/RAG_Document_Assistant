@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 class ChatRequest(BaseModel):
     message: str
+    document_ids: list[str] | None = None
     session_id: str | None = None
 
 
@@ -28,10 +29,12 @@ class ChatResponse(BaseModel):
 
 @router.post("/", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    logger.info(f"Chat request: {request.message[:80]}")
+    logger.info(f"Chat request: '{request.message[:80]}' | "
+                f"doc_filter: {request.document_ids}")
 
     initial_state = {
         "query": request.message,
+        "document_ids": request.document_ids or [],
         "intent": "unknown",
         "retrieval_result": {},
         "summarize_result": {},

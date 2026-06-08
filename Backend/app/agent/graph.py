@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class AgentState(TypedDict):
     query: str
+    document_ids: list[str]
     intent: Literal["retrieve", "summarize", "unknown"]
     retrieval_result: dict
     summarize_result: dict
@@ -61,7 +62,10 @@ async def run_retrieve(state: AgentState) -> AgentState:
     """
     Node 2a: Run the hybrid retrieval pipeline.
     """
-    result = await retrieve_tool(state["query"])
+    result = await retrieve_tool(
+        query=state["query"],
+        document_ids=state["document_ids"],  # ← propagate
+    )
     return {**state, "retrieval_result": result, "grounded": result.get("grounded", False)}
 
 
@@ -69,7 +73,9 @@ async def run_summarize(state: AgentState) -> AgentState:
     """
     Node 2b: Fetch document content for summarization.
     """
-    result = await summarize_tool()
+    result = await summarize_tool(
+        document_ids=state["document_ids"],  # ← propagate
+    )
     return {**state, "summarize_result": result, "grounded": True}
 
 

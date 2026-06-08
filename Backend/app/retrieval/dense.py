@@ -1,6 +1,7 @@
 # backend/app/retrieval/dense.py
 import logging
 from dataclasses import dataclass
+from qdrant_client.models import Filter, FieldCondition, MatchAny
 from app.config import get_settings
 from app.dependencies import get_qdrant_client
 from app.ingestion.embedder import embed_single
@@ -20,15 +21,33 @@ class DenseResult:
     score: float
 
 
-async def dense_search(query: str, top_k: int) -> list[DenseResult]:
+async def dense_search(
+    query: str,
+    top_k: int,
+    document_ids: list[str] | None = None,
+) -> list[DenseResult]:
+
     query_vector = await embed_single(query)
     qdrant = get_qdrant_client()
+
+    # Build filter only when IDs are explicitly provided
+    query_filter = None
+    if document_ids:
+        query_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="document_id",
+                    match=MatchAny(any=document_ids),  # matches any of the IDs
+                )
+            ]
+        )
 
     results = await qdrant.query_points(
         collection_name=settings.qdrant_collection,
         query=query_vector,
         limit=top_k,
         with_payload=True,
+        query_filter=query_filter,
     )
 
     hits = []
@@ -44,5 +63,5 @@ async def dense_search(query: str, top_k: int) -> list[DenseResult]:
             score=r.score,
         ))
 
-    logger.info(f"Dense search returned {len(hits)} results")
+    logger.info(f"Dense: {len(hits)} results | filter={document_ids or 'all'}")
     return hits

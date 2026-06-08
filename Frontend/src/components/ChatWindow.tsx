@@ -5,7 +5,7 @@ import { sendMessage } from '@/lib/api'
 import { Message } from '@/types'
 import MessageBubble from './MessageBubble'
 
-export default function ChatWindow() {
+export default function ChatWindow({ selectedIds }: { selectedIds: string[] }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -38,7 +38,7 @@ export default function ChatWindow() {
     setLoading(true)
 
     try {
-      const response = await sendMessage(text)
+      const response = await sendMessage(text, selectedIds)  // ← pass selectedIds
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -49,18 +49,16 @@ export default function ChatWindow() {
         intent: response.intent,
         timestamp: new Date(),
       }
-
-      setMessages((prev) => [...prev, assistantMessage])
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Something went wrong. Is the backend running?',
-          timestamp: new Date(),
-        },
-      ])
+      setMessages(prev => [...prev, assistantMessage])
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+       console.error('Chat error:', errorMessage);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Error: ${errorMessage}`,
+        timestamp: new Date(),
+      }])
     } finally {
       setLoading(false)
     }
