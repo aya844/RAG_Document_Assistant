@@ -179,19 +179,6 @@ cd Backend
 pip install -r requirements.txt
 ```
 
-**Environment Configuration** (optional `.env` file in `Backend/`):
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-EMBED_MODEL=nomic-embed-text
-LLM_MODEL=qwen2.5:7b-instruct
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_COLLECTION=rag_chunks
-SQLITE_PATH=data/rag.db
-BM25_INDEX_PATH=data/bm25_index.pkl
-UPLOAD_DIR=data/uploads
-GROUNDING_SCORE_THRESHOLD=0.25
-```
 
 ### 2. Frontend Setup
 
